@@ -5,24 +5,36 @@ bot = telebot.TeleBot('7585158499:AAG91_F-OhKvf0i3-zgObTmcccKGJNlAQNw')
 
 # Массив каналов для рассылки
 CHANNELS = [
-    "@S_GMjob1",
-    "@S_GMjob2",
-    "@S_GMjob3",
+    "@Estetika_Kyxni_shkafi"
 ]
 
+# Массив разрешенных пользовательских ID
+ALLOWED_USERS = [
+    8438177540,  # Добавьте нужные ID
+    7631971482,
+]
+
+def is_user_allowed(user_id):
+    """Проверяет, есть ли у пользователя доступ"""
+    return user_id in ALLOWED_USERS
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.reply_to(message,
-                 "Добро пожаловать! Отправьте мне любое сообщение (текст, фото, видео), и я перешлю его во все каналы с кнопками для связи.")
-
+    if not is_user_allowed(message.from_user.id):
+        bot.reply_to(message, "❌ У вас нет доступа к этому боту.")
+        return
+        
+    bot.reply_to(message, "Добро пожаловать! Отправьте мне любое сообщение (текст, фото, видео), и я перешлю его во все каналы с кнопками для связи.")
 
 @bot.message_handler(commands=['channels'])
 def show_channels(message):
     """Показывает список каналов для рассылки"""
+    if not is_user_allowed(message.from_user.id):
+        bot.reply_to(message, "❌ У вас нет доступа к этому боту.")
+        return
+        
     channels_list = "\n".join([f"• {channel}" for channel in CHANNELS])
     bot.reply_to(message, f"📢 Каналы для рассылки:\n{channels_list}\n\nВсего: {len(CHANNELS)} каналов")
-
 
 def create_keyboard():
     """Создает клавиатуру с тремя кнопками"""
@@ -46,7 +58,6 @@ def create_keyboard():
     keyboard.add(button1)
     keyboard.add(button2, button3)
     return keyboard
-
 
 def send_to_all_channels(content_type, content_data, caption_text):
     """Отправляет сообщение во все каналы"""
@@ -92,9 +103,13 @@ def send_to_all_channels(content_type, content_data, caption_text):
 
     return success_count, failed_channels
 
-
 @bot.message_handler(content_types=['text', 'photo', 'video', 'document'])
 def handle_all_messages(message):
+    # Проверяем доступ пользователя
+    if not is_user_allowed(message.from_user.id):
+        bot.reply_to(message, "❌ У вас нет доступа к этому боту.")
+        return
+        
     try:
         caption_text = "Для связи используйте кнопки ниже👇"
         if message.caption:
@@ -138,11 +153,11 @@ def handle_all_messages(message):
         print(f"Ошибка при обработке сообщения: {e}")
         bot.reply_to(message, f"❌ Произошла ошибка: {str(e)}")
 
-
 if __name__ == "__main__":
     print("Бот запущен...")
     print(f"Каналы для рассылки: {CHANNELS}")
-    print("Функционал: автоматическая рассылка всех сообщений в multiple каналы")
+    print(f"Разрешенные пользователи: {ALLOWED_USERS}")
+    print("Функционал: автоматическая рассылка для разрешенных пользователей")
 
     try:
         bot.polling(none_stop=True, timeout=60)
