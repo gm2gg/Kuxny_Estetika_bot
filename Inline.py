@@ -10,8 +10,9 @@ CHANNELS = [
 
 # Массив разрешенных пользовательских ID
 ALLOWED_USERS = [
-    8438177540,  # Добавьте нужные ID
     7631971482,
+    8438177540,
+    804870556,
 ]
 
 def is_user_allowed(user_id):
@@ -163,3 +164,4 @@ if __name__ == "__main__":
         bot.polling(none_stop=True, timeout=60)
     except Exception as e:
         print(f"Ошибка запуска бота: {e}")
+
