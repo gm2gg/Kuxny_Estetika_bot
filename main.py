@@ -130,7 +130,7 @@ class Database:
         cursor = self.conn.cursor()
         cursor.execute('SELECT subscribed FROM users WHERE user_id = ?', (user_id,))
         result = cursor.fetchone()
-        return result[0] if result else False
+        return bool(result[0]) if result else False
 
     def save_application(self, user_id, full_name, phone_number, user_query):
         try:
@@ -353,108 +353,17 @@ class TelegramBot:
 
         self.setup_handlers()
 
-    def setup_handlers(self):
-        # Обработчики команд
-        @self.bot.message_handler(
-            func=lambda message: message.text in ['📞 Контакты', '💼 Услуги'])
-        def info_buttons_handler(message):
-            self.info_buttons_handler(message)
 
-        @self.bot.message_handler(commands=['start'])
-        def start_handler(message):  # УБРАТЬ self здесь!
-            user = message.from_user
 
-            # Проверяем, есть ли пользователь уже в базе
-            cursor = self.db.conn.cursor()
-            cursor.execute('SELECT subscribed FROM users WHERE user_id = ?', (user.id,))
-            existing_user = cursor.fetchone()
 
-            # Добавляем/обновляем пользователя
-            self.db.add_user(user.id, user.username, user.first_name, user.last_name)
+def setup_handlers(self):
+    # Обработчики команд
+    @self.bot.message_handler(func=lambda message: message.text in ['📞 Контакты', '💼 Услуги'])
+    def info_buttons_handler(message):
+        self.info_buttons_handler(message)
 
-            # Проверка подписки (синхронно)
-            try:
-                chat_member = self.bot.get_chat_member(self.config.CHANNEL_USERNAME, user.id)
-                is_subscribed = chat_member.status in ['member', 'administrator', 'creator']
-            except:
-                is_subscribed = False
-
-            if is_subscribed:
-                # Обновляем подписку
-                self.db.update_subscription(user.id, 1)
-
-                # Отправляем уведомление только если пользователь был неподписан или это новый пользователь
-                if not existing_user or (existing_user and not existing_user[0]):
-                    for admin_id in self.config.ADMIN_ID:
-                        self.bot.send_message(admin_id,f"🎉 Новый подписчик: {user.first_name} {user.last_name} (@{user.username})")
-
-                self.bot.send_message(message.chat.id, self.config.WELCOME_MESSAGE, reply_markup=get_main_keyboard())
-            else:
-                self.db.update_subscription(user.id, 0)
-                self.bot.send_message(
-                    message.chat.id,
-                    self.config.SUBSCRIPTION_REQUIRED.format(self.config.CHANNEL_USERNAME),
-                    reply_markup=get_subscription_keyboard(self.config.CHANNEL_USERNAME)
-                )
-
-        @self.bot.message_handler(commands=['admin'])
-        def admin_handler(message):
-            self.admin_handler(message)
-
-        @self.bot.message_handler(commands=['chat'])
-        def chat_command(message):
-            self.chat_command(message)
-
-        @self.bot.message_handler(commands=['delete'])
-        def delete_command(message):
-            self.delete_command(message)
-
-        # Обработчик callback запросов
-        @self.bot.callback_query_handler(func=lambda call: True)
-        def callback_handler(call):
-            self.callback_handler(call)
-
-        # Обработчики текстовых сообщений
-        @self.bot.message_handler(func=lambda message: message.text == '📝 Оставить заявку')
-        def start_application(message):
-            self.start_application(message)
-
-        @self.bot.message_handler(func=lambda message: message.text == 'ℹ️ Информация')
-        def info_handler(message):
-            self.info_handler(message)
-
-        @self.bot.message_handler(func=lambda message: message.text == '↩️ Назад')
-        def back_handler(message):
-            self.back_handler(message)
-
-        @self.bot.message_handler(
-            func=lambda message: message.text in ['📊 Статистика', '📋 Все заявки', '👥 Все пользователи', '📨 Рассылка',
-                                                  '🗑️ Удалить заявку'])
-        def admin_buttons_handler(message):
-            self.admin_buttons_handler(message)
-
-        # Обработчик всех текстовых сообщений
-        @self.bot.message_handler(content_types=['text'])
-        def text_message_handler(message):
-            user_id = message.from_user.id
-
-            # Обработка кнопок чата для админа
-            if user_id in self.config.ADMIN_ID and user_id in self.user_states and 'current_chat' in self.user_states[user_id]:
-                if message.text == '❌ Завершить чат':
-                    self.end_chat(message)
-                    return
-                elif message.text == '📋 Информация о заявке':
-                    self.show_application_info(message)
-                    return
-
-            self.text_message_handler(message)
-
-        # Обработчик контактов
-        @self.bot.message_handler(content_types=['contact'])
-        def contact_handler(message):
-            self.contact_handler(message)
-
-    def start_handler(self, message):
+    @self.bot.message_handler(commands=['start'])
+    def start_handler(message):
         user = message.from_user
 
         # Проверяем, есть ли пользователь уже в базе
@@ -490,213 +399,94 @@ class TelegramBot:
                 reply_markup=get_subscription_keyboard(self.config.CHANNEL_USERNAME)
             )
 
-    def admin_handler(self, message):
-        if message.from_user.id not in self.config.ADMIN_ID:
-            self.bot.send_message(message.chat.id, "❌ Доступ запрещен")
-            return
-        self.bot.send_message(message.chat.id, "👨‍💻 Панель администратора", reply_markup=get_admin_keyboard())
+    @self.bot.message_handler(commands=['admin'])
+    def admin_handler(message):
+        self.admin_handler(message)
 
-    def callback_handler(self, call):
-        if call.data == "check_subscription":
-            self.subscription_callback(call)
-        elif call.data.startswith(("chat_", "close_", "details_", "delete_", "confirm_delete_", "cancel_delete_")):
-            self.admin_order_callback(call)
+    @self.bot.message_handler(commands=['chat'])
+    def chat_command(message):
+        self.chat_command(message)
 
-    def end_chat(self, message):
+    @self.bot.message_handler(commands=['delete'])
+    def delete_command(message):
+        self.delete_command(message)
+
+    # Обработчик callback запросов
+    @self.bot.callback_query_handler(func=lambda call: True)
+    def callback_handler(call):
+        self.callback_handler(call)
+
+    # Обработчики текстовых сообщений
+    @self.bot.message_handler(func=lambda message: message.text == '📝 Оставить заявку')
+    def start_application_handler(message):
         user_id = message.from_user.id
-        if user_id in self.user_states and 'current_chat' in self.user_states[user_id]:
-            application_id = self.user_states[user_id]['current_chat']
-
-            # Закрываем заявку
-            self.db.update_application_status(application_id, 'closed')
-
-            # Очищаем состояние чата
-            del self.user_states[user_id]['current_chat']
-
-            # Отправляем подтверждение
-            self.bot.send_message(
-                user_id,
-                self.config.ORDER_CLOSED.format(application_id),
-                reply_markup=get_admin_keyboard()
-            )
-
-            # Уведомляем пользователя
-            application = self.db.get_application_by_id(application_id)
-            if application:
-                user_target_id = application[1]  # user_id из заявки
-                self.bot.send_message(
-                    user_target_id,
-                    f"💬 Чат по заявке #{application_id} завершен администратором.\nСпасибо за обращение!",
-                    reply_markup=get_main_keyboard()
-                )
-
-    def show_application_info(self, message):
-        user_id = message.from_user.id
-        if user_id in self.user_states and 'current_chat' in self.user_states[user_id]:
-            application_id = self.user_states[user_id]['current_chat']
-            application = self.db.get_application_by_id(application_id)
-
-            if application:
-                self.bot.send_message(
-                    user_id,
-                    format_application(application),
-                    reply_markup=get_chat_keyboard(application_id)
-                )
-            else:
-                self.bot.send_message(
-                    user_id,
-                    self.config.ORDER_NOT_FOUND.format(application_id),
-                    reply_markup=get_chat_keyboard(application_id)
-                )
-
-    def subscription_callback(self, call):
-        user = call.from_user
-
+        
+        # Проверяем актуальную подписку через Telegram API
         try:
-            chat_member = self.bot.get_chat_member(self.config.CHANNEL_USERNAME, user.id)
+            chat_member = self.bot.get_chat_member(self.config.CHANNEL_USERNAME, user_id)
             is_subscribed = chat_member.status in ['member', 'administrator', 'creator']
         except:
             is_subscribed = False
-
-        if is_subscribed:
-            # Проверяем, был ли пользователь уже подписан
-            cursor = self.db.conn.cursor()
-            cursor.execute('SELECT subscribed FROM users WHERE user_id = ?', (user.id,))
-            existing_subscription = cursor.fetchone()
-
-            self.db.update_subscription(user.id, 1)
-            self.bot.edit_message_text(
-                self.config.SUBSCRIPTION_SUCCESS,
-                call.message.chat.id,
-                call.message.message_id
-            )
-
-            # Отправляем уведомление только если пользователь был неподписан
-            if not existing_subscription or (existing_subscription and not existing_subscription[0]):
-                for admin_id in self.config.ADMIN_ID:
-                    self.bot.send_message(admin_id,f"🎉 Новый подписчик: {user.first_name} {user.last_name} (@{user.username})")
-
-            self.bot.send_message(user.id, "Выберите действие:", reply_markup=get_main_keyboard())
-        else:
-            self.bot.answer_callback_query(call.id, "❌ Вы еще не подписались на канал!", show_alert=True)
-
-    def start_application(self, message):
-        user_id = message.from_user.id
-        if not self.db.check_subscription(user_id):
+        
+        if not is_subscribed:
             self.bot.send_message(
                 message.chat.id,
                 self.config.SUBSCRIPTION_REQUIRED.format(self.config.CHANNEL_USERNAME),
                 reply_markup=get_subscription_keyboard(self.config.CHANNEL_USERNAME)
             )
             return
-
+        
+        # Обновляем статус подписки в базе
+        self.db.update_subscription(user_id, 1)
+        
         self.user_states[user_id] = {'state': 'NAME'}
         self.bot.send_message(message.chat.id, self.config.REQUEST_NAME, reply_markup=get_back_keyboard())
 
-    def info_buttons_handler(self, message):
-        if message.text == '📞 Контакты':
-            self.bot.send_message(
-                message.chat.id,
-                "📞 Наши контакты:\n\nТелеграм: @Estetika_admi",
-                reply_markup=get_info_keyboard()
-            )
-        elif message.text == '💼 Услуги':
-            self.bot.send_message(
-                message.chat.id,
-                "💼 Наши услуги:\n\n• Изготовление кухни - лучшая цена!\n• Шкафы - под заказ\n• Мебель для гостиной\n• Детская мебель\n• Гардеробные",
-                reply_markup=get_info_keyboard()
-            )
+    @self.bot.message_handler(func=lambda message: message.text == 'ℹ️ Информация')
+    def info_handler(message):
+        self.info_handler(message)
 
-    def get_name(self, message):
-        user_id = message.from_user.id
-        full_name = message.text
+    @self.bot.message_handler(func=lambda message: message.text == '↩️ Назад')
+    def back_handler(message):
+        self.back_handler(message)
 
-        if not validate_name(full_name):
-            self.bot.send_message(
-                message.chat.id,
-                self.config.INVALID_NAME,
-                reply_markup=get_back_keyboard()
-            )
-            return
+    @self.bot.message_handler(
+        func=lambda message: message.text in ['📊 Статистика', '📋 Все заявки', '👥 Все пользователи', '📨 Рассылка',
+                                              '🗑️ Удалить заявку'])
+    def admin_buttons_handler(message):
+        self.admin_buttons_handler(message)
 
-        if user_id not in self.user_states:
-            self.user_states[user_id] = {}
-
-        self.user_states[user_id]['full_name'] = full_name
-        self.user_states[user_id]['state'] = 'PHONE'
-
-        self.bot.send_message(
-            message.chat.id,
-            f"{self.config.REQUEST_PHONE}\nПример: {self.config.PHONE_EXAMPLE}",
-            reply_markup=get_phone_keyboard()
-        )
-
-    def get_phone(self, message, is_contact=False):
+    # Обработчик всех текстовых сообщений
+    @self.bot.message_handler(content_types=['text'])
+    def text_message_handler(message):
         user_id = message.from_user.id
 
-        if is_contact:
-            phone_number = message.contact.phone_number
-        else:
-            phone_number = message.text
+        # Обработка кнопок чата для админа
+        if user_id in self.config.ADMIN_ID and user_id in self.user_states and 'current_chat' in self.user_states[user_id]:
+            if message.text == '❌ Завершить чат':
+                self.end_chat(message)
+                return
+            elif message.text == '📋 Информация о заявке':
+                self.show_application_info(message)
+                return
 
-        formatted_phone = format_phone(phone_number)
+        self.text_message_handler(message)
 
-        if not formatted_phone or not validate_phone(formatted_phone):
-            self.bot.send_message(
-                message.chat.id,
-                self.config.INVALID_PHONE,
-                reply_markup=get_phone_keyboard()
-            )
-            return
+    # Обработчик контактов
+    @self.bot.message_handler(content_types=['contact'])
+    def contact_handler(message):
+        self.contact_handler(message)
 
-        self.user_states[user_id]['phone_number'] = formatted_phone
-        self.user_states[user_id]['state'] = 'QUERY'
+        # Обработка кнопок чата для админа
+        if user_id in self.config.ADMIN_ID and user_id in self.user_states and 'current_chat' in self.user_states[user_id]:
+            if message.text == '❌ Завершить чат':
+                self.end_chat(message)
+                return
+            elif message.text == '📋 Информация о заявке':
+                self.show_application_info(message)
+                return
 
-        self.bot.send_message(
-            message.chat.id,
-            self.config.REQUEST_QUERY,
-            reply_markup=get_back_keyboard()
-        )
-
-    def get_query(self, message):
-        user_id = message.from_user.id
-        user_query = message.text
-        user_data = self.user_states.get(user_id, {})
-
-        if 'full_name' not in user_data or 'phone_number' not in user_data:
-            self.bot.send_message(message.chat.id, "❌ Ошибка: данные не найдены", reply_markup=get_main_keyboard())
-            return
-
-        application_id = self.db.save_application(
-            user_id,
-            user_data['full_name'],
-            user_data['phone_number'],
-            user_query
-        )
-
-        if application_id:
-            self.bot.send_message(message.chat.id, self.config.DATA_SAVED, reply_markup=get_main_keyboard())
-            application = self.db.get_application_by_id(application_id)
-            if application:
-                for admin_id in self.config.ADMIN_ID:
-                    self.bot.send_message(
-                        admin_id,
-                        f"📩 Новая заявка!\n{format_application(application)}",
-                        reply_markup=get_admin_order_keyboard(application_id)
-                    )
-        else:
-            self.bot.send_message(message.chat.id, "❌ Ошибка при сохранении данных", reply_markup=get_main_keyboard())
-
-        # Очищаем состояние пользователя
-        if user_id in self.user_states:
-            del self.user_states[user_id]
-
-    def info_handler(self, message):
-        self.bot.send_message(
-            message.chat.id,
-            self.config.INFO_MESSAGE,
-            reply_markup=get_info_keyboard()
-        )
+        self.text_message_handler(message)
 
     def back_handler(self, message):
         user_id = message.from_user.id
@@ -1005,3 +795,4 @@ class TelegramBot:
 if __name__ == "__main__":
     bot = TelegramBot()
     bot.run()
+
