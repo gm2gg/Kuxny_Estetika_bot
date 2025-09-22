@@ -3,7 +3,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
 import time
 import threading
 
-bot = telebot.TeleBot('')
+bot = telebot.TeleBot('7585158499:AAEWMijQmGuW8qMS0bxZdSPKLdpCfdRS960')
 
 # Массив каналов для рассылки
 CHANNELS = [
@@ -359,4 +359,5 @@ if __name__ == "__main__":
     try:
         bot.polling(none_stop=True, timeout=60)
     except Exception as e:
+
         print(f"Ошибка запуска бота: {e}")
