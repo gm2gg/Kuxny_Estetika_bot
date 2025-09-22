@@ -55,20 +55,9 @@ def create_keyboard():
         text="👨‍💻 Связаться с дизайнером",
         url="https://t.me/Estetika_kuhni_bot"
     )
-
-    button2 = InlineKeyboardButton(
-        text="📐 Прислать проект",
-        url="https://t.me/Estetika_admi?start=project_calculation"
-    )
-
-    button3 = InlineKeyboardButton(
-        text="📏 Выезд на замер",
-        url="https://t.me/Estetika_admi?start=measurement_visit"
-    )
-
     button4 = InlineKeyboardButton(
         text="⭐ Отзывы",
-        url="https://t.me/Etetika_prorkti"
+        url="https://t.me/Estetika_otziv"
     )
 
     button5 = InlineKeyboardButton(
@@ -78,8 +67,6 @@ def create_keyboard():
 
     # Все кнопки в один столбец
     keyboard.add(button1)
-    keyboard.add(button2)
-    keyboard.add(button3)
     keyboard.add(button4)
     keyboard.add(button5)
     
@@ -364,5 +351,6 @@ if __name__ == "__main__":
     except Exception as e:
 
         print(f"Ошибка запуска бота: {e}")
+
 
 
