@@ -17,7 +17,8 @@ load_dotenv()
 
 # Конфигурация, переменные
 class Config:
-    BOT_TOKEN = "8377401163:AAGcgyx35JH8lOw1Xg5Jvm9slQp0hwPO724"
+    BOT_TOKEN = "8461726522:AAEATe74hJkYMx7Cv5NPUHRPDIomChWgpgo"
+   # BOT_TOKEN = "8377401163:AAGcgyx35JH8lOw1Xg5Jvm9slQp0hwPO724"
     CHANNEL_USERNAME = "@Estetika_Kyxni_shkafi"
     ADMIN_ID = [7631971482, 8438177540, 8281653308]
     DATABASE_NAME = "bot_database.db"
@@ -1002,4 +1003,5 @@ class TelegramBot:
 if __name__ == "__main__":
     bot = TelegramBot()
     bot.run()
+
 
