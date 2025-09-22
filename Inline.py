@@ -1,7 +1,7 @@
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo
 
-bot = telebot.TeleBot('7585158499:AAG91_F-OhKvf0i3-zgObTmcccKGJNlAQNw')
+bot = telebot.TeleBot('')
 
 # Массив каналов для рассылки
 CHANNELS = [
@@ -254,3 +254,4 @@ if __name__ == "__main__":
         bot.polling(none_stop=True, timeout=60)
     except Exception as e:
         print(f"Ошибка запуска бота: {e}")
+
