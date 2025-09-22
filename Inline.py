@@ -3,7 +3,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMedia
 import time
 import threading
 
-bot = telebot.TeleBot('7585158499:AAEWMijQmGuW8qMS0bxZdSPKLdpCfdRS960')
+bot = telebot.TeleBot('')
 
 # Массив каналов для рассылки
 CHANNELS = [
@@ -361,3 +361,4 @@ if __name__ == "__main__":
     except Exception as e:
 
         print(f"Ошибка запуска бота: {e}")
+
