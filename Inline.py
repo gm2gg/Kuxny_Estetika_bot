@@ -48,8 +48,8 @@ def show_channels(message):
 
 
 def create_keyboard():
-    """Создает клавиатуру с кнопками"""
-    keyboard = InlineKeyboardMarkup(row_width=2)
+    """Создает клавиатуру с кнопками в один столбец"""
+    keyboard = InlineKeyboardMarkup(row_width=1)  # 1 кнопка в строке
 
     button1 = InlineKeyboardButton(
         text="👨‍💻 Связаться с дизайнером",
@@ -76,10 +76,13 @@ def create_keyboard():
         url="https://t.me/Etetika_prorkti"
     )
 
-    # Распределяем кнопки по строкам для лучшей читаемости
+    # Все кнопки в один столбец
     keyboard.add(button1)
-    keyboard.add(button2, button3)
-    keyboard.add(button4, button5)
+    keyboard.add(button2)
+    keyboard.add(button3)
+    keyboard.add(button4)
+    keyboard.add(button5)
+    
     return keyboard
 
 
@@ -361,4 +364,5 @@ if __name__ == "__main__":
     except Exception as e:
 
         print(f"Ошибка запуска бота: {e}")
+
 
