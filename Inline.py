@@ -60,7 +60,7 @@ def send_welcome(message):
 /true - прикреплять кнопки к сообщениям (по умолчанию)
 /false - не прикреплять кнопки к сообщениям
 
-Бот автоматически добавляет кнопки к сообщениям в отслеживаемых каналах и группах.
+Бот автоматически добавляет кнопки под сообщениями в отслеживаемых каналах и группах.
 """
     bot.reply_to(message, welcome_text)
 
@@ -94,7 +94,7 @@ def should_add_buttons(user_id):
     return user_settings.get(user_id, True)
 
 
-@bot.channel_post_handler(content_types=['text', 'photo', 'video', 'document'])
+@bot.channel_post_handler(content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker', 'animation'])
 def handle_channel_post(message):
     """Обрабатывает сообщения из каналов"""
     chat_id = message.chat.id
@@ -125,36 +125,13 @@ def handle_channel_post(message):
             keyboard = create_keyboard()
             
             try:
-                if message.content_type == 'text':
-                    bot.send_message(
-                        chat_id, 
-                        f"{message.text}\n\nДля связи используйте кнопки ниже 👇", 
-                        reply_markup=keyboard
-                    )
-                elif message.content_type == 'photo':
-                    caption = f"{message.caption or ''}\n\nДля связи используйте кнопки ниже 👇" if message.caption else "Для связи используйте кнопки ниже 👇"
-                    bot.send_photo(
-                        chat_id,
-                        message.photo[-1].file_id,
-                        caption=caption,
-                        reply_markup=keyboard
-                    )
-                elif message.content_type == 'video':
-                    caption = f"{message.caption or ''}\n\nДля связи используйте кнопки ниже 👇" if message.caption else "Для связи используйте кнопки ниже 👇"
-                    bot.send_video(
-                        chat_id,
-                        message.video.file_id,
-                        caption=caption,
-                        reply_markup=keyboard
-                    )
-                elif message.content_type == 'document':
-                    caption = f"{message.caption or ''}\n\nДля связи используйте кнопки ниже 👇" if message.caption else "Для связи используйте кнопки ниже 👇"
-                    bot.send_document(
-                        chat_id,
-                        message.document.file_id,
-                        caption=caption,
-                        reply_markup=keyboard
-                    )
+                # Отправляем только текст с кнопками под сообщением
+                bot.send_message(
+                    chat_id, 
+                    "Для связи используйте кнопки ниже 👇", 
+                    reply_markup=keyboard,
+                    reply_to_message_id=message.message_id  # Ответ на конкретное сообщение
+                )
                 
                 print(f"✅ Добавлены кнопки к сообщению в {channel_name}")
                 
