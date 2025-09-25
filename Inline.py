@@ -1,7 +1,7 @@
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-bot = telebot.TeleBot('YOUR_BOT_TOKEN')
+bot = telebot.TeleBot('')
 
 # Массив каналов и групп для отслеживания
 TRACKED_CHATS = [
@@ -60,7 +60,7 @@ def send_welcome(message):
 /true - прикреплять кнопки к сообщениям (по умолчанию)
 /false - не прикреплять кнопки к сообщениям
 
-Бот автоматически добавляет кнопки под сообщениями админов в отслеживаемых каналах и группах.
+Бот автоматически добавляет кнопки под сообщениями в отслеживаемых каналах и группах.
 """
     bot.reply_to(message, welcome_text)
 
@@ -106,14 +106,7 @@ def is_tracked_chat(chat_id, chat_username):
     return False, ""
 
 
-def is_message_from_admin(message):
-    """Проверяет, что сообщение от админа бота"""
-    if hasattr(message, 'from_user') and message.from_user:
-        return message.from_user.id in ALLOWED_USERS
-    return False
-
-
-def handle_chat_message(message):
+def handle_chat_message(message, is_channel=False):
     """Обрабатывает сообщения из чатов (каналов и групп)"""
     chat_id = message.chat.id
     chat_username = f"@{message.chat.username}" if message.chat.username else None
@@ -121,42 +114,51 @@ def handle_chat_message(message):
     # Проверяем, что сообщение пришло из отслеживаемого чата
     is_tracked, chat_name = is_tracked_chat(chat_id, chat_username)
     
-    if is_tracked:
-        # Проверяем, что сообщение от админа бота
-        if not is_message_from_admin(message):
-            print(f"❌ Сообщение в {chat_name} от обычного пользователя, игнорируем")
+    if not is_tracked:
+        return
+    
+    # Для каналов - всегда обрабатываем
+    # Для групп - проверяем, что сообщение от админа бота
+    if not is_channel:
+        if not hasattr(message, 'from_user') or not message.from_user or message.from_user.id not in ALLOWED_USERS:
+            print(f"❌ Сообщение в группе {chat_name} от обычного пользователя, игнорируем")
             return
+    
+    # Определяем ID для настроек
+    if is_channel:
+        # Для каналов используем первого админа
+        user_id = ALLOWED_USERS[0] if ALLOWED_USERS else None
+    else:
+        # Для групп используем ID отправителя
+        user_id = message.from_user.id
+    
+    add_buttons = should_add_buttons(user_id) if user_id else True
+    
+    if add_buttons:
+        keyboard = create_keyboard()
         
-        # Получаем настройки для отправителя
-        sender_id = message.from_user.id
-        add_buttons = should_add_buttons(sender_id)
-        
-        if add_buttons:
-            keyboard = create_keyboard()
+        try:
+            # Отправляем просто следующим сообщением без ответа
+            bot.send_message(
+                chat_id, 
+                "Для связи используйте кнопки ниже 👇", 
+                reply_markup=keyboard
+            )
             
-            try:
-                # Отправляем просто следующим сообщением без ответа
-                bot.send_message(
-                    chat_id, 
-                    "Для связи используйте кнопки ниже 👇", 
-                    reply_markup=keyboard
-                )
-                
-                print(f"✅ Добавлены кнопки к сообщению админа в {chat_name}")
-                
-            except Exception as e:
-                print(f"❌ Ошибка при добавлении кнопок в {chat_name}: {e}")
-        else:
-            print(f"✅ Режим /false - кнопки не добавлены к сообщению в {chat_name}")
+            sender_type = "канала" if is_channel else "админа"
+            print(f"✅ Добавлены кнопки к сообщению {sender_type} в {chat_name}")
+            
+        except Exception as e:
+            print(f"❌ Ошибка при добавлении кнопок в {chat_name}: {e}")
+    else:
+        print(f"✅ Режим /false - кнопки не добавлены к сообщению в {chat_name}")
 
 
 # Обработчик для сообщений из каналов
 @bot.channel_post_handler(content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker', 'animation'])
 def handle_channel_post(message):
     """Обрабатывает сообщения из каналов"""
-    # В каналах from_user обычно None, поэтому проверяем по автору поста
-    # Если нужно проверять конкретного автора в канале, нужно добавить дополнительную логику
-    handle_chat_message(message)
+    handle_chat_message(message, is_channel=True)
 
 
 # Обработчик для сообщений из групп и супергрупп
@@ -164,7 +166,7 @@ def handle_channel_post(message):
                     chat_types=['group', 'supergroup'])
 def handle_group_message(message):
     """Обрабатывает сообщения из групп"""
-    handle_chat_message(message)
+    handle_chat_message(message, is_channel=False)
 
 
 @bot.message_handler(content_types=['text', 'photo', 'video', 'document', 'audio', 'voice', 'sticker'])
